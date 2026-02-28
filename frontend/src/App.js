@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 function App() {
   const [documents, setDocuments] = useState([]);
@@ -8,8 +8,27 @@ function App() {
     if (currentDoc.title && currentDoc.content) {
       setDocuments([...documents, currentDoc]);
       setCurrentDoc({ title: '', content: '' });
+      tinymce.get('editor').setContent('');
     }
   };
+
+  useEffect(() => {
+    if (window.tinymce) {
+      tinymce.init({
+        selector: '#editor',
+        plugins: 'advlist autolink lists link image charmap print preview anchor',
+        toolbar_mode: 'floating',
+        setup: (editor) => {
+          editor.on('init', () => {
+            editor.setContent(currentDoc.content);
+          });
+          editor.on('change', () => {
+            setCurrentDoc({ ...currentDoc, content: editor.getContent() });
+          });
+        }
+      });
+    }
+  }, []);
 
   return (
     <div>
@@ -21,11 +40,7 @@ function App() {
           value={currentDoc.title}
           onChange={(e) => setCurrentDoc({ ...currentDoc, title: e.target.value })}
         />
-        <textarea
-          placeholder="Contenu du document"
-          value={currentDoc.content}
-          onChange={(e) => setCurrentDoc({ ...currentDoc, content: e.target.value })}
-        />
+        <textarea id="editor" placeholder="Contenu du document"></textarea>
         <button onClick={handleSave}>Sauvegarder</button>
       </div>
       <div>
@@ -34,7 +49,7 @@ function App() {
           {documents.map((doc, index) => (
             <li key={index}>
               <h3>{doc.title}</h3>
-              <p>{doc.content}</p>
+              <div dangerouslySetInnerHTML={{ __html: doc.content }}></div>
             </li>
           ))}
         </ul>
